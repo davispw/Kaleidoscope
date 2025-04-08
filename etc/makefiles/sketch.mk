@@ -173,6 +173,8 @@ compile: kaleidoscope-hardware-configured
 	  --output-dir "${OUTPUT_PATH}" \
 	  --build-cache-path "${CORE_CACHE_PATH}" \
 	  "${SKETCH_FILE_PATH}"
+	$(info Build artifacts can be found in ${BUILD_PATH})
+
 ifeq ($(LIBONLY),)
 	$(QUIET) cp "${BUILD_PATH}/${SKETCH_FILE_NAME}.hex" "${HEX_FILE_PATH}"
 	$(QUIET) cp "${BUILD_PATH}/${SKETCH_FILE_NAME}.elf" "${ELF_FILE_PATH}"
