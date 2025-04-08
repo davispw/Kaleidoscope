@@ -27,6 +27,7 @@ ifneq ($(ks_dir),)
 $(info Using Kaleidoscope from $(ks_dir))
 
 export KALEIDOSCOPE_DIR := $(ks_dir)
+$(info include $(ks_dir)/$(sketch_makefile))
 include $(ks_dir)/$(sketch_makefile)
 
 else
