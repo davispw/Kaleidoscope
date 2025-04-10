@@ -31,7 +31,7 @@
 
 // Support for the "Boot greeting" effect, which pulses the 'LED' button for 10s
 // when the keyboard is connected to a computer (or that computer is powered on)
-//#include "Kaleidoscope-LEDEffect-BootGreeting.h"
+#include "Kaleidoscope-LEDEffect-BootGreeting.h"
 
 // Support for LED modes that set all LEDs to a single color
 //#include "Kaleidoscope-LEDEffect-SolidColor.h"
@@ -66,6 +66,9 @@
 // Support for turning the LEDs off after a certain amount of time
 #include "Kaleidoscope-IdleLEDs.h"
 
+// davispw: store LED mode
+#include <Kaleidoscope-PersistentLEDMode.h>
+
 // Support for overlaying colors
 #include "Kaleidoscope-Colormap-Overlay.h"
 
@@ -73,7 +76,7 @@
 #include "Kaleidoscope-DefaultLEDModeConfig.h"
 
 // Support for changing the brightness of the LEDs
- #include "Kaleidoscope-LEDBrightnessConfig.h"
+#include "Kaleidoscope-LEDBrightnessConfig.h"
 
 // Support for Keyboardio's internal keyboard testing mode
 #include "Kaleidoscope-HardwareTestMode.h"
@@ -111,7 +114,7 @@
 #include "Kaleidoscope-TopsyTurvy.h"
 
 // (davispw) Prefix layer for tmux
-#include <Kaleidoscope-PrefixLayer.h>
+#include "Kaleidoscope-PrefixLayer.h"
 
 /** This 'enum' is a list of all the macros used by the Model 100's firmware
   * The names aren't particularly important. What is important is that each
@@ -489,8 +492,7 @@ static void enterHardwareTestMode(uint8_t combo_index) {
 
 /* (davispw) Prefix layer configuration: while on layer 7, any key will be prefixed with Ctrl+\. */
 static const kaleidoscope::plugin::PrefixLayer::Entry prefix_layers[] PROGMEM = {
-  kaleidoscope::plugin::PrefixLayer::Entry(7, LCTRL(Key_Backslash))
-};
+  kaleidoscope::plugin::PrefixLayer::Entry(7, LCTRL(Key_Backslash))};
 
 /** Magic combo list, a list of key combo and action pairs the firmware should
  * recognise.
@@ -545,6 +547,9 @@ KALEIDOSCOPE_INIT_PLUGINS(
   // Enables controlling (and saving) the brightness of the LEDs via Focus.
   LEDBrightnessConfig,
 
+  // davispw: enable active sticky mod key highlighting
+  ActiveModColorEffect,
+
   // ----------------------------------------------------------------------
   // Keystroke-handling plugins
 
@@ -565,7 +570,7 @@ KALEIDOSCOPE_INIT_PLUGINS(
   OneShotConfig,
   EscapeOneShot,
   EscapeOneShotConfig,
-  OneShotMetaKeys, // davispw: add OneShotMetaKeys
+  OneShotMetaKeys,  // davispw: add OneShotMetaKeys
 
   // The macros plugin adds support for macros
   Macros,
@@ -601,7 +606,7 @@ KALEIDOSCOPE_INIT_PLUGINS(
 
   // The rainbow effect changes the color of all of the keyboard's keys at the same time
   // running through all the colors of the rainbow.
-//  LEDRainbowEffect,
+  //  LEDRainbowEffect,
 
   // The rainbow wave effect lights up your keyboard with all the colors of a rainbow
   // and slowly moves the rainbow across your keyboard
@@ -609,23 +614,23 @@ KALEIDOSCOPE_INIT_PLUGINS(
 
   // The chase effect follows the adventure of a blue pixel which chases a red pixel across
   // your keyboard. Spoiler: the blue pixel never catches the red pixel
-//  LEDChaseEffect,
+  //  LEDChaseEffect,
 
   // These static effects turn your keyboard's LEDs a variety of colors
-//  solidRed,
-//  solidOrange,
-//  solidYellow,
-//  solidGreen,
-//  solidBlue,
-//  solidIndigo,
-//  solidViolet,
+  //  solidRed,
+  //  solidOrange,
+  //  solidYellow,
+  //  solidGreen,
+  //  solidBlue,
+  //  solidIndigo,
+  //  solidViolet,
 
   // The breathe effect slowly pulses all of the LEDs on your keyboard
-//  LEDBreatheEffect,
+  //  LEDBreatheEffect,
 
   // The AlphaSquare effect prints each character you type, using your
   // keyboard's LEDs as a display
-//  AlphaSquareEffect,
+  //  AlphaSquareEffect,
 
   // The stalker effect lights up the keys you've pressed recently
   StalkerEffect,
@@ -652,6 +657,7 @@ KALEIDOSCOPE_INIT_PLUGINS(
   // Turns LEDs off after a configurable amount of idle time.
   IdleLEDs,
   PersistentIdleLEDs,
+  PersistentLEDMode,  // davispw: remember LED seletion
 
   // ----------------------------------------------------------------------
   // Miscellaneous plugins
@@ -671,8 +677,7 @@ KALEIDOSCOPE_INIT_PLUGINS(
 
   // (davispw) Prefix layer for tmux.
   // This must be after TopsyTurvy.
-  PrefixLayer
-);
+  PrefixLayer);
 
 /** The 'setup' function is one of the two standard Arduino sketch functions.
  * It's called when your keyboard first powers up. This is where you set up
@@ -696,36 +701,36 @@ void setup() {
   // (3, 0) (3, 1) (3, 2) (3, 3) (3, 4) (3, 5) (2, 6) | (2, 9) (3, 10) (3, 11) (3, 12) (3, 13) (3, 14) (3, 15)
   //                      (0, 7) (1, 7) (2, 7) (3, 7) | (3, 8) (2, 8)  (1, 8)  (0, 8)
   //                                           (3, 6) | (3, 9)
-  COLORMAP_OVERLAYS(
-    kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(0, 11), 23),  // 7
-    kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(1, 11), 23),  // 4
-    kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(2, 11), 23),  // 1
-    kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(3, 11), 23),  // 0
-    kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(0, 12), 23),  // 8
-    kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(1, 12), 23),  // 5
-    kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(2, 12), 23),  // 2
-    kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(3, 12), 23),  // period
-    kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(0, 13), 23),  // 9
-    kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(1, 13), 23),  // 6
-    kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(2, 13), 23),  // 3
-    kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(3, 13), 23),  // multiply
-    kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(0, 14), 23),  // substract
-    kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(1, 14), 23),  // add
-    kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(2, 14), 23),  // equals
-    kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(3, 14), 23),  // divide
-    kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(3, 15), 23),  // enter
-    )                                                           // COLORMAP_OVERLAYS(
+  // COLORMAP_OVERLAYS(
+  //   kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(0, 11), 23),  // 7
+  //   kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(1, 11), 23),  // 4
+  //   kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(2, 11), 23),  // 1
+  //   kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(3, 11), 23),  // 0
+  //   kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(0, 12), 23),  // 8
+  //   kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(1, 12), 23),  // 5
+  //   kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(2, 12), 23),  // 2
+  //   kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(3, 12), 23),  // period
+  //   kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(0, 13), 23),  // 9
+  //   kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(1, 13), 23),  // 6
+  //   kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(2, 13), 23),  // 3
+  //   kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(3, 13), 23),  // multiply
+  //   kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(0, 14), 23),  // substract
+  //   kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(1, 14), 23),  // add
+  //   kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(2, 14), 23),  // equals
+  //   kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(3, 14), 23),  // divide
+  //   kaleidoscope::plugin::Overlay(NUMPAD, KeyAddr(3, 15), 23),  // enter
+  //   )                                                           // COLORMAP_OVERLAYS(
 
   // Set the hue of the boot greeting effect to something that will result in a
   // nice green color.
-//  BootGreetingEffect.hue = 85;
+  //  BootGreetingEffect.hue = 85;
 
   // While we hope to improve this in the future, the NumPad plugin
   // needs to be explicitly told which keymap layer is your numpad layer
-//  NumPad.numPadLayer = NUMPAD;
+  //  NumPad.numPadLayer = NUMPAD;
 
   // We configure the AlphaSquare effect to use RED letters
-//  AlphaSquare.color = CRGB(255, 0, 0);
+  //  AlphaSquare.color = CRGB(255, 0, 0);
 
   // Set the rainbow effects to be reasonably bright, but low enough
   // to mitigate audible noise in some environments.
@@ -734,7 +739,7 @@ void setup() {
   // (davispw) Control via LEDBrightnessConfig.
   LEDRainbowEffect.brightness(255);
   LEDRainbowWaveEffect.brightness(255);
-  
+
   // Set the action key the test mode should listen for to Left Fn
   HardwareTestMode.setActionKey(R3C6);
 
@@ -777,14 +782,15 @@ void setup() {
   // Unless configured otherwise with Chrysalis, we want to make sure that the
   // firmware starts with LED effects off. This avoids over-taxing devices that
   // don't have a lot of power to share with USB devices
-  DefaultLEDModeConfig.activateLEDModeIfUnconfigured(&LEDOff);
+  DefaultLEDModeConfig.activateLEDModeIfUnconfigured(&StalkerEffect);
+  //DefaultLEDModeConfig.activateLEDModeIfUnconfigured(&LEDOff);
 
   // davispw default mouse is way too slow
-  MouseKeys.accelDelay = 10; // default = 50ms/step
+  MouseKeys.accelDelay = 10;  // default = 50ms/step
 
   // davispw Reduce unintended Modifier for home-row Qukeys.
-  Qukeys.setOverlapThreshold(95); // default: 80%
-  Qukeys.setMinimumHoldTime(60); // default: 50ms
+  Qukeys.setOverlapThreshold(95);  // default: 80%
+  Qukeys.setMinimumHoldTime(60);   // default: 50ms
 
   // (davispw) Activate prefix layer.
   PrefixLayer.setPrefixLayers(prefix_layers);
@@ -792,6 +798,10 @@ void setup() {
   // davispw: Activate highlighting the active OneShot / LED key.
   // This should be ~last to override other LED effects.
   ActiveModColorEffect.setHighlightColor(CRGB(0xbb, 0xbb, 0xff));
+
+  // davispw: I use OS_ASK to clear OneShot keys, not Escape.
+  // Avoids unpredictably having to press Esc twice.
+  EscapeOneShot.setCancelKey(Key_OneShotCancel);
 }
 
 /** loop is the second of the standard Arduino sketch functions.
