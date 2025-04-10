@@ -145,6 +145,18 @@ void HIDStateBuilder::ProcessConsumerControlReport(const ConsumerControlReport &
 
 // static
 void HIDStateBuilder::ProcessKeyboardReport(const KeyboardReport &report) {
+  auto key_codes = report.ActiveKeycodes();
+  fprintf(stderr, ">>> Observed keyboard report: timestamp=%d, key_codes=",
+  report.Timestamp());
+  auto i = key_codes.begin();
+  while (i != key_codes.end()) {
+    fprintf(stderr, "%d", *i);
+    i++;
+    if (i != key_codes.end()) {
+      fprintf(stderr, ", ");
+    }
+  }
+  fprintf(stderr, "\n");
   keyboard_reports_.push_back(report);
 }
 

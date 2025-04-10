@@ -32,6 +32,8 @@
 #include "kaleidoscope/keyswitch_state.h"    // for keyToggledOn
 #include "kaleidoscope/plugin/MacroSteps.h"  // for macro_t, MACRO_ACTION_END, MACRO_ACTION_STEP_...
 
+#include "kaleidoscope/device/virtual/Logging.h"  // for log_info, logging
+
 namespace kaleidoscope {
 namespace plugin {
 
@@ -239,6 +241,15 @@ struct SramAccessor {
 };
 
 void EphemeralMacros::play() {
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+  ::kaleidoscope::logging::log_error("EphemeralMacros.play(): sequence=");
+  int i = 0;
+  for (macro_t *ptr = buffer_; i < max_length_ && *ptr != MACRO_ACTION_END; i++, ptr++) {
+    ::kaleidoscope::logging::log_error("%d ", *ptr);
+  }
+  ::kaleidoscope::logging::log_error("\n");
+#endif
+
   SramAccessor accessor(buffer_, max_length_);
   ::MacroSupport.play(accessor, interval_millis_);
 }

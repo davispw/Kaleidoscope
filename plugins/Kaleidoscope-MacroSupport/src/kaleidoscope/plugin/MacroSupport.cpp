@@ -33,6 +33,8 @@
 #include "kaleidoscope/key_defs.h"              // for Key, Key_NoKey
 #include "kaleidoscope/keyswitch_state.h"       // for INJECTED, IS_PRESSED, WAS_PRESSED
 
+#include "kaleidoscope/device/virtual/Logging.h"  // for log_info, logging
+
 // =============================================================================
 // `Macros` plugin code
 namespace kaleidoscope {
@@ -46,6 +48,9 @@ constexpr uint8_t release_state = WAS_PRESSED | INJECTED;
 
 void MacroSupport::press(Key key) {
   Runtime.handleKeyEvent(KeyEvent{KeyAddr::none(), press_state, key});
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+  ::kaleidoscope::logging::log_error("MacroSupport.press(%d)\n", key.getRaw());
+#endif
   // This key may remain active for several subsequent events, so we need to
   // store it in the active macro keys array.
   for (Key &macro_key : active_macro_keys_) {
@@ -53,21 +58,34 @@ void MacroSupport::press(Key key) {
       macro_key = key;
       break;
     }
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+    ::kaleidoscope::logging::log_error("> MacroSupport.press(): holding %d\n", macro_key.getRaw());
+#endif
   }
 }
 
 void MacroSupport::release(Key key) {
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+  ::kaleidoscope::logging::log_error("MacroSupport.release(%d)\n", key.getRaw());
+#endif
   // Before sending the release event, we need to remove the key from the active
   // macro keys array, or it will get inserted into the report anyway.
   for (Key &macro_key : active_macro_keys_) {
     if (macro_key == key) {
       macro_key = Key_NoKey;
     }
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+    else if (macro_key != Key_NoKey)
+      ::kaleidoscope::logging::log_error("> MacroSupport.release(): still holding %d\n", macro_key.getRaw());
+#endif
   }
   Runtime.handleKeyEvent(KeyEvent{KeyAddr::none(), release_state, key});
 }
 
 void MacroSupport::clear() {
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+  ::kaleidoscope::logging::log_error("MacroSupport.clear()\n");
+#endif
   // Clear the active macro keys array.
   for (Key &macro_key : active_macro_keys_) {
     if (macro_key == Key_NoKey)
@@ -81,6 +99,9 @@ void MacroSupport::tap(Key key) const {
   // No need to call `press()` & `release()`, because we're immediately
   // releasing the key after pressing it. It is possible for some other plugin
   // to insert an event in between, but very unlikely.
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+  ::kaleidoscope::logging::log_error("MacroSupport.tap(%d): delay=%d\n", key.getRaw(), MACRO_TAP_DELAY);
+#endif
   Runtime.handleKeyEvent(KeyEvent{KeyAddr::none(), press_state, key});
   delay(MACRO_TAP_DELAY);
   Runtime.handleKeyEvent(KeyEvent{KeyAddr::none(), release_state, key});
@@ -95,7 +116,12 @@ EventHandlerResult MacroSupport::beforeReportingState(const KeyEvent &event) {
   // the keypress. This could be changed by either updating `live_keys` manually
   // ahead of time, or by executing the macro sequence on key release instead of
   // key press. This is probably the simplest solution.
+  ::kaleidoscope::logging::log_error("# MacroSupport.beforeReportingState():\n");
   for (Key key : active_macro_keys_) {
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+    if (key != Key_NoKey)
+      ::kaleidoscope::logging::log_error("> MacroSupport.beforeReportingState(): holding %d\n", key.getRaw());
+#endif
     if (key != Key_NoKey)
       Runtime.addToReport(key);
   }
