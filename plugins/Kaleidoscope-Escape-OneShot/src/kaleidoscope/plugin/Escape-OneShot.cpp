@@ -22,6 +22,8 @@
 
 #include "kaleidoscope/plugin/Escape-OneShot.h"
 
+#include "kaleidoscope/device/virtual/Logging.h"  // for log_info, logging
+
 #include <Kaleidoscope-OneShot.h>          // for OneShot
 #include <Kaleidoscope-OneShotMetaKeys.h>  // for OneShot_ActiveStickyKey
 
@@ -55,6 +57,15 @@ EventHandlerResult EscapeOneShot::onKeyEvent(KeyEvent &event) {
   // Two keys will always count as an escape key, even if not explicitly set:
   // - `Key_OneShotCancel` - explicit escape key
   // - `OneShot_ActiveStickyKey` - toggle off if no other keys are held
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+  ::kaleidoscope::logging::log_error("Escape-OneShot: key: %d, is OS_ASK: %d, is toggled on: %d, is injected: %d, is OS active: %d, held: %d\n",
+                                     event.key.getKeyCode(),
+                                     (event.key == OneShot_ActiveStickyKey),
+                                     keyToggledOn(event.state),
+                                     keyIsInjected(event.state),
+                                     ::OneShot.isActive(),
+                                     held_addrs_.read(event.addr));
+#endif
   if ((event.key == settings_.cancel_oneshot_key ||
        event.key == Key_OneShotCancel ||
        event.key == OneShot_ActiveStickyKey) &&
@@ -65,10 +76,16 @@ EventHandlerResult EscapeOneShot::onKeyEvent(KeyEvent &event) {
       for (KeyAddr held_addr : held_addrs_) {
         if (Runtime.lookupKey(held_addr) != OneShot_ActiveStickyKey) {
           // Keys are still physically held - don't cancel.
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+            ::kaleidoscope::logging::log_error("Escape-OneShot: bailing because key is held: %d\n", Runtime.lookupKey(held_addr).getKeyCode());
+#endif
           return EventHandlerResult::OK;
         }
       }
     }
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+    ::kaleidoscope::logging::log_error("Escape-OneShot: cancelling OneShot: %d\n", event.key.getKeyCode());
+#endif
     // Cancel all OneShot keys
     ::OneShot.cancel(true);
     // Change the cancellation key to a blank key, and signal that event
