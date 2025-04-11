@@ -69,6 +69,9 @@
 // davispw: store LED mode
 #include <Kaleidoscope-PersistentLEDMode.h>
 
+// davispw: change LED brightness
+#include <Kaleidoscope-LEDBrightnessControl.h>
+
 // Support for overlaying colors
 #include "Kaleidoscope-Colormap-Overlay.h"
 
@@ -658,6 +661,7 @@ KALEIDOSCOPE_INIT_PLUGINS(
   IdleLEDs,
   PersistentIdleLEDs,
   PersistentLEDMode,  // davispw: remember LED seletion
+  LEDBrightnessControl,  // davispw: brightness up/down keys
 
   // ----------------------------------------------------------------------
   // Miscellaneous plugins
