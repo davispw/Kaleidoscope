@@ -10,7 +10,18 @@ Playing back a sequence means that when we press a macro key, we can have it
 play pretty much any sequence. It can type some text for us, or invoke a
 complicated shortcut - the possibilities are endless!
 
-In Kaleidoscope, macros are implemented via this plugin. You can define upto 256 macros.
+In Kaleidoscope, you can implement powerful macros in code via this plugin.
+You can define up to 256 macros.
+
+There are two other macro plugins in Kaleidoscope:
+
+* [DynamicMacros][plugin:dynamicmacros]: up to 32 macros configurable without
+  recompiling firmware using a tool like [Chrysalis][chrysalis].
+* [EphemeralMacros][plugin:ephemeralmacros]: record on-the-fly and erase when
+  the keyboard resets.
+
+ [plugin:ephemeralmacros]: Kaleidoscope-EphemeralMacros.md
+ [chrysalis]: https://github.com/keyboardio/Chrysalis
 
 ## Using the plugin
 

@@ -14,6 +14,12 @@ macros, dynamic ones do not support running custom code, they can only play back
 a sequence of events (keys, mousekeys, etc), and do so whenever one presses the
 dynamic macro key.
 
+Dynamic macros are also similar to [EphemeralMacros][plugin:ephemeralmacros] but
+remain stored when the keyboard resets. This may or may not be what you want
+if your macro might contain sensitive information.
+
+ [plugin:ephemeralmacros]: Kaleidoscope-EphemeralMacros.md
+
 You can define up to 32 dynamic macros, there is no limit on their length,
 except the amount of storage available on the keyboard.
 
