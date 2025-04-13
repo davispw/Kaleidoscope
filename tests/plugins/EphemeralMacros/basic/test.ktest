@@ -1,0 +1,49 @@
+VERSION 1
+
+KEYSWITCH RECORD  0 0
+KEYSWITCH PLAY    0 1
+KEYSWITCH X       1 0
+KEYSWITCH Y       1 1
+KEYSWITCH SHIFT   2 0
+
+# ==============================================================================
+NAME Record and playback of simple taps
+
+RUN 5 ms
+PRESS RECORD
+RUN 5 ms
+RELEASE RECORD
+
+RUN 5 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+RUN 5 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report empty
+RUN 5 ms
+PRESS Y
+RUN 1 cycle
+EXPECT keyboard-report Key_Y
+RUN 5 ms
+RELEASE Y
+RUN 1 cycle
+EXPECT keyboard-report empty
+
+RUN 5 ms
+PRESS RECORD
+RUN 5 ms
+RELEASE RECORD
+
+RUN 5 ms
+PRESS PLAY
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+EXPECT keyboard-report empty
+EXPECT keyboard-report Key_Y
+EXPECT keyboard-report empty
+
+RUN 5 ms
+RELEASE PLAY
+RUN 1 cycle
