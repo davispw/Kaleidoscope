@@ -22,6 +22,8 @@
 
 #include "kaleidoscope/plugin/EphemeralMacros.h"
 
+#include "kaleidoscope/device/virtual/Logging.h"  // for log_info, logging
+
 #include <Kaleidoscope-FocusSerial.h>   // for Focus
 #include <Kaleidoscope-MacroSupport.h>  // for MacroSupport
 #include <Kaleidoscope-Ranges.h>        // for RECORD_MACRO, PLAY_RECORDED_MACRO
@@ -40,6 +42,10 @@ namespace plugin {
 // =============================================================================
 
 void EphemeralMacros::initializeBuffer(void *buffer, size_t size) {
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+  ::kaleidoscope::logging::log_error("EphemeralMacros.initializeBuffer: size=%d\n",
+                                     size);
+#endif
   buffer_     = (macro_t *)buffer;
   max_length_ = size;
   pos_        = 0;
@@ -59,6 +65,11 @@ bool EphemeralMacros::recordKey(const KeyEvent &event) {
 
 bool EphemeralMacros::recordKey(Key key, bool is_key_down) {
   if (!is_key_down && previous_keydown_ == key) {
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+    ::kaleidoscope::logging::log_error("EphemeralMacros.recordKey: TAP: key: %d, is_key_down=%d\n",
+                                       key.getRaw(),
+                                       is_key_down);
+#endif
     // Record a tap if a key is up immediately after down.
     // This saves a little memory and reduces interval delay for simple taps.
     if (key.getFlags() == 0) {
@@ -78,6 +89,10 @@ bool EphemeralMacros::recordKey(Key key, bool is_key_down) {
   if (previous_keydown_ != Key_NoKey) {
     Key buffered      = previous_keydown_;
     previous_keydown_ = Key_NoKey;
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+    ::kaleidoscope::logging::log_error("EphemeralMacros.recordKey: FLUSHING PREVIOUS KEYDOWN: key: %d\n",
+                                       key.getRaw());
+#endif
     if (buffered.getFlags() == 0) {
       if (!saveStep(MACRO_ACTION_STEP_KEYCODEDOWN, buffered.getKeyCode())) {
         return false;
@@ -93,12 +108,21 @@ bool EphemeralMacros::recordKey(Key key, bool is_key_down) {
   // Buffer keydown events.
   // They'll be either flushed or converted to a tap on the next event.
   if (is_key_down) {
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+    ::kaleidoscope::logging::log_error("EphemeralMacros.recordKey: BUFFERING KEYDOWN: key: %d\n",
+                                       key.getRaw());
+#endif
     previous_keydown_ = key;
     return true;
   }
 
   // The remaining possibility is a keyup event that isn't a tap.
   // Record it.
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+  ::kaleidoscope::logging::log_error("EphemeralMacros.recordKey: KEYUP: key: %d, is_key_down=%d\n",
+                                     key.getRaw(),
+                                     is_key_down);
+#endif
   if (key.getFlags() == 0) {
     if (!saveStep(MACRO_ACTION_STEP_KEYCODEUP, key.getKeyCode())) {
       return false;
@@ -128,20 +152,43 @@ bool EphemeralMacros::saveStep(macro_t step, const uint8_t *args, size_t args_si
   if (pos_ + (2 * sizeof(macro_t)) + args_size >= max_length_)
     return false;
 
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+  ::kaleidoscope::logging::log_error("EphemeralMacros.saveStep: step=%d, args_size=%d @ pos_=%d (max_length_=%d)\n",
+                                     step,
+                                     args_size,
+                                     pos_,
+                                     max_length_);
+#endif
+
   buffer_[pos_++] = step;
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+  ::kaleidoscope::logging::log_error("EphemeralMacros.saveStep: saved step -> pos_=%d\n", pos_);
+#endif
   if (args != nullptr) {
     memcpy(buffer_ + pos_, args, args_size);
     pos_ += args_size;
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+    ::kaleidoscope::logging::log_error("EphemeralMacros.saveStep: saved args -> pos_=%d\n", pos_);
+#endif
   }
 
   // Always maintain this sentinel.
   // This will be overwritten if another step is recorded,
   // so don't increment pos_.
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+  ::kaleidoscope::logging::log_error("EphemeralMacros.saveStep: writing sentinel @ pos_=%d\n", pos_);
+#endif
   buffer_[pos_] = MACRO_ACTION_END;
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+  ::kaleidoscope::logging::log_error("EphemeralMacros.saveStep: done\n");
+#endif
   return true;
 }
 
 void EphemeralMacros::failRecording() {
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+  ::kaleidoscope::logging::log_error("EphemeralMacros.failRecording()!\n");
+#endif
   // 1. Prevent subsequent steps from being recorded, no matter their length.
   // 2. Erase the macro.
   // This prevents stuck keys on playback of an incomplete macro.
@@ -154,6 +201,9 @@ void EphemeralMacros::failRecording() {
 bool EphemeralMacros::flushLiveKeys() {
   // Record keyUp events for all held keys.
   // This prevents stuck keys at the end of a macro.
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+  ::kaleidoscope::logging::log_error("EphemeralMacros.flushLiveKeys()!\n");
+#endif
   for (Key key : live_keys.all()) {
     if (key != Key_Inactive && key != Key_Masked) {
       if (!recordKey(key, /* is_key_down= */ false)) {
@@ -166,17 +216,30 @@ bool EphemeralMacros::flushLiveKeys() {
 
 // -----------------------------------------------------------------------------
 EventHandlerResult EphemeralMacros::onKeyEvent(KeyEvent &event) {
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+  ::kaleidoscope::logging::log_error("EphemeralMacros.onKeyEvent: key: %d, keyToggledOn=%d, keyToggledOff=%d\n",
+                                     event.key.getRaw(),
+                                     keyToggledOn(event.state),
+                                     keyToggledOff(event.state));
+#endif
+
   // Start and stop recording.
   if (event.key == Key_RecordMacro) {
     event.key = Key_NoKey;  // always consume
     if (keyToggledOn(event.state)) {
       if (!recording_) {
         // Start recording.
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+        ::kaleidoscope::logging::log_error("EphemeralMacros.onKeyEvent: start recording\n");
+#endif
         recording_        = true;
         previous_keydown_ = Key_NoKey;
         pos_              = 0;
       } else {
         // End recording.
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+        ::kaleidoscope::logging::log_error("EphemeralMacros.onKeyEvent: end recording, length=%d\n", pos_);
+#endif
         recording_ = false;
         if (!flushLiveKeys()) {
           failRecording();
@@ -189,10 +252,19 @@ EventHandlerResult EphemeralMacros::onKeyEvent(KeyEvent &event) {
 
   // Playback.
   if (event.key == Key_PlayRecordedMacro) {
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+    ::kaleidoscope::logging::log_error("EphemeralMacros.onKeyEvent(): play key event\n");
+#endif
     event.key = Key_NoKey;  // always consume
     if (keyToggledOn(event.state)) {
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+      ::kaleidoscope::logging::log_error("EphemeralMacros.onKeyEvent(): play key pressed\n");
+#endif
       // Prevent playback while recording.
       if (recording_) {
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+        ::kaleidoscope::logging::log_error("EphemeralMacros.onKeyEvent(): already recording - ABORT\n");
+#endif
         return EventHandlerResult::ABORT;
       }
       play();
@@ -210,6 +282,9 @@ EventHandlerResult EphemeralMacros::onKeyEvent(KeyEvent &event) {
     return EventHandlerResult::OK;
   }
 
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+  ::kaleidoscope::logging::log_error("EphemeralMacros.onKeyEvent(): done\n");
+#endif
   return EventHandlerResult::OK;
 }
 
@@ -218,6 +293,9 @@ EventHandlerResult EphemeralMacros::onKeyEvent(KeyEvent &event) {
 // Until then, some there are some MACRO_ACTION_* steps implemented here
 // that aren't possible to record.
 void EphemeralMacros::play() {
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+  ::kaleidoscope::logging::log_error("EphemeralMacros.play: starting playback with interval %d\n", interval_millis_);
+#endif
 
   macro_t macro     = MACRO_ACTION_END;
   uint16_t interval = interval_millis_;
@@ -229,23 +307,35 @@ void EphemeralMacros::play() {
   auto setKeyAndAction = [this, &key, &macro, &pos]() {
   // Keycode variants of actions don't have flags to set, but we want to make sure
   // we're still initializing them properly.
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+    ::kaleidoscope::logging::log_error("EphemeralMacros.play.setKeyAndAction: macro=%d, pos=%d\n", macro, pos);
+#endif
 
-  key.setFlags((macro == MACRO_ACTION_STEP_KEYCODEDOWN || macro == MACRO_ACTION_STEP_KEYCODEUP || macro == MACRO_ACTION_STEP_TAPCODE) ? 0
-                                                                                                                                      : buffer_[pos++]);
+    key.setFlags((macro == MACRO_ACTION_STEP_KEYCODEDOWN || macro == MACRO_ACTION_STEP_KEYCODEUP || macro == MACRO_ACTION_STEP_TAPCODE) ? 0
+                                                                                                                                        : buffer_[pos++]);
 
-  key.setKeyCode(buffer_[pos++]);
+    key.setKeyCode(buffer_[pos++]);
 
-  switch (macro) {
+    switch (macro) {
     case MACRO_ACTION_STEP_KEYCODEDOWN:
     case MACRO_ACTION_STEP_KEYDOWN:
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+      ::kaleidoscope::logging::log_error("EphemeralMacros.play.setKeyAndAction: PRESS key=%d\n", key.getRaw());
+#endif
       ::MacroSupport.press(key);
       break;
     case MACRO_ACTION_STEP_KEYCODEUP:
     case MACRO_ACTION_STEP_KEYUP:
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+      ::kaleidoscope::logging::log_error("EphemeralMacros.play.setKeyAndAction: RELEASE key=%d\n", key.getRaw());
+#endif
       ::MacroSupport.release(key);
       break;
     case MACRO_ACTION_STEP_TAP:
     case MACRO_ACTION_STEP_TAPCODE:
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+      ::kaleidoscope::logging::log_error("EphemeralMacros.play.setKeyAndAction: TAP key=%d\n", key.getRaw());
+#endif
       ::MacroSupport.tap(key);
       break;
     default:
@@ -295,10 +385,19 @@ void EphemeralMacros::play() {
       break;
     }
     default:
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+      ::kaleidoscope::logging::log_error("EphemeralMacros.play: DEFAULT CASE @ pos=%d - ABORT macro=%d\n", pos - 1, macro);
+#endif
     case MACRO_ACTION_END:
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+      ::kaleidoscope::logging::log_error("EphemeralMacros.play: END\n");
+#endif
       return;
     }
 
+#ifdef KALEIDOSCOPE_VIRTUAL_BUILD
+    ::kaleidoscope::logging::log_error("EphemeralMacros.play: delaying %dms\n", interval);
+#endif
     delay(interval);
   }
 }
