@@ -104,6 +104,9 @@
 // Support for dynamic, Chrysalis-editable macros
 #include "Kaleidoscope-DynamicMacros.h"
 
+// Support for ephemeral macros - record on the fly.
+#include "Kaleidoscope-EphemeralMacros.h"
+
 // Support for SpaceCadet keys
 #include "Kaleidoscope-SpaceCadet.h"
 
@@ -581,6 +584,9 @@ KALEIDOSCOPE_INIT_PLUGINS(
   // Enables dynamic, Chrysalis-editable macros.
   DynamicMacros,
 
+  // Enables ephemeral macros - record on the fly.
+  EphemeralMacros,
+
   // The MouseKeys plugin lets you add keys to your keymap which move the mouse.
   MouseKeys,
   MouseKeysConfig,
@@ -683,6 +689,10 @@ KALEIDOSCOPE_INIT_PLUGINS(
   // This must be after TopsyTurvy.
   PrefixLayer);
 
+// Allocate RAM to store ephemeral macro recordings.
+constexpr size_t ephemeralMacroSize = 128;
+uint8_t ephemeralMacroBuffer[ephemeralMacroSize];
+
 /** The 'setup' function is one of the two standard Arduino sketch functions.
  * It's called when your keyboard first powers up. This is where you set up
  * Kaleidoscope and any plugins.
@@ -768,6 +778,9 @@ void setup() {
   // For Dynamic Macros, we need to reserve storage space for the editable
   // macros. A kilobyte is a reasonable default.
   DynamicMacros.reserve_storage(1024);
+
+  // For Ephemeral Macros, we need to tell the plugin to use the allocated RAM.
+  EphemeralMacros.initializeBuffer(ephemeralMacroBuffer, ephemeralMacroSize);
 
   // If there's a default layer set in EEPROM, we should set that as the default
   // here.
