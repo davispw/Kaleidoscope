@@ -25,12 +25,12 @@
 #include <Kaleidoscope-Ranges.h>  // for RECORD_MACRO
 #include <stdint.h>               // for uint16_t, uint8_t, size_t
 
-#include "kaleidoscope/KeyAddrBitfield.h"           // for KeyAddrBitfield
-#include "kaleidoscope/KeyEvent.h"                  // for KeyEvent
-#include "kaleidoscope/event_handler_result.h"      // for EventHandlerResult
-#include "kaleidoscope/key_defs.h"                  // for Key
-#include "kaleidoscope/plugin.h"                    // for Plugin
-#include "kaleidoscope/plugin/Macros/MacroSteps.h"  // for macro_t
+#include "kaleidoscope/KeyAddrBitfield.h"       // for KeyAddrBitfield
+#include "kaleidoscope/KeyEvent.h"              // for KeyEvent
+#include "kaleidoscope/event_handler_result.h"  // for EventHandlerResult
+#include "kaleidoscope/key_defs.h"              // for Key
+#include "kaleidoscope/plugin.h"                // for Plugin
+#include "kaleidoscope/plugin/MacroSteps.h"     // for macro_t
 
 constexpr Key Key_RecordMacro       = Key(kaleidoscope::ranges::RECORD_MACRO);
 constexpr Key Key_PlayRecordedMacro = Key(kaleidoscope::ranges::PLAY_RECORDED_MACRO);
@@ -59,11 +59,11 @@ class EphemeralMacros : public kaleidoscope::Plugin {
   void failRecording();
   bool flushLiveKeys();
 
-  macro_t *buffer_      = nullptr;
-  size_t max_length_    = 0;
-  bool recording_       = false;
-  size_t pos_           = 0;
-  Key previous_keydown_ = Key_NoKey;
+  macro_t *buffer_          = nullptr;
+  size_t max_length_        = 0;
+  bool recording_           = false;
+  size_t pos_               = 0;
+  Key previous_keydown_     = Key_NoKey;
   uint16_t interval_millis_ = 25;
 };
 
