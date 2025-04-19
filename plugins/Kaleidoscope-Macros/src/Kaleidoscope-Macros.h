@@ -22,5 +22,6 @@
 
 #pragma once
 
-#include "kaleidoscope/plugin/Macros.h"               // IWYU pragma: export
-#include "kaleidoscope/plugin/Macros/MacroKeyDefs.h"  // IWYU pragma: export
+#include "kaleidoscope/plugin/Macros.h"        // IWYU pragma: export
+#include "kaleidoscope/plugin/MacroKeyDefs.h"  // IWYU pragma: export
+#include "kaleidoscope/plugin/MacroSteps.h"    // IWYU pragma: export

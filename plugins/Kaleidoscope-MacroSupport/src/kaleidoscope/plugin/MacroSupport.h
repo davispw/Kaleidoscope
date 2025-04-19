@@ -26,11 +26,7 @@
 #include "kaleidoscope/event_handler_result.h"  // for EventHandlerResult
 #include "kaleidoscope/key_defs.h"              // for Key
 #include "kaleidoscope/plugin.h"                // for Plugin
-
-// This is a special exception to the rule of only including a plugin's
-// top-level header file, because MacroSupport doesn't depend on the Macros
-// plugin itself; it's just using the same macro step definitions.
-#include "kaleidoscope/plugin/Macros/MacroSteps.h"  // for MACRO_ACTION_END, MACRO_ACTION_STEP_...
+#include "kaleidoscope/plugin/MacroSteps.h"     // for MACRO_ACTION_END, MACRO_ACTION_STEP_...
 
 // =============================================================================
 // The number of simultaneously-active `Key` values that a macro can have

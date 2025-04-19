@@ -27,12 +27,9 @@
 #include <Kaleidoscope-Ranges.h>        // for RECORD_MACRO, PLAY_RECORDED_MACRO
 #include <stdint.h>                     // for uint8_t, uint16_t, size_t
 
-#include "kaleidoscope/KeyEvent.h"         // for KeyEvent
-#include "kaleidoscope/keyswitch_state.h"  // for keyToggledOn
-// This is a special exception to the rule of only including a plugin's
-// top-level header file, because DynamicMacros doesn't depend on the Macros
-// plugin itself; it's just using the same macro step definitions.
-#include "kaleidoscope/plugin/Macros/MacroSteps.h"  // for macro_t, MACRO_ACTION_END, MACRO_ACTION_STEP_...
+#include "kaleidoscope/KeyEvent.h"           // for KeyEvent
+#include "kaleidoscope/keyswitch_state.h"    // for keyToggledOn
+#include "kaleidoscope/plugin/MacroSteps.h"  // for macro_t, MACRO_ACTION_END, MACRO_ACTION_STEP_...
 
 namespace kaleidoscope {
 namespace plugin {
@@ -40,7 +37,7 @@ namespace plugin {
 // =============================================================================
 
 void EphemeralMacros::initializeBuffer(void *buffer, size_t size) {
-  buffer_     = (macro_t *)buffer;
+  buffer_     = reinterpret_cast<macro_t *>(buffer);
   max_length_ = size;
   pos_        = 0;
   if (buffer != nullptr) {
@@ -215,11 +212,11 @@ EventHandlerResult EphemeralMacros::onKeyEvent(KeyEvent &event) {
 
 // Accessor for MacroSupport::play() to read SRAM buffer.
 struct SramAccessor {
-  const uint8_t* current;
-  const uint8_t* end;
+  const uint8_t *current;
+  const uint8_t *end;
   static constexpr bool has_boundary = true;
 
-  SramAccessor(const uint8_t* buf_start, size_t buf_size)
+  SramAccessor(const uint8_t *buf_start, size_t buf_size)
     : current(buf_start), end(buf_start + buf_size) {}
 
   // Read the next byte and advance

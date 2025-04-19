@@ -31,10 +31,7 @@
 #include "kaleidoscope/device/device.h"           // for VirtualProps::Storage, Base<>::Storage
 #include "kaleidoscope/keyswitch_state.h"         // for keyToggledOn
 #include "kaleidoscope/plugin/EEPROM-Settings.h"  // for EEPROMSettings
-// This is a special exception to the rule of only including a plugin's
-// top-level header file, because DynamicMacros doesn't depend on the Macros
-// plugin itself; it's just using the same macro step definitions.
-#include "kaleidoscope/plugin/Macros/MacroSteps.h"  // for MACRO_ACTION_END, MACRO_ACTION_STEP_E...
+#include "kaleidoscope/plugin/MacroSteps.h"       // for MACRO_ACTION_END, MACRO_ACTION_STEP_E...
 
 namespace kaleidoscope {
 namespace plugin {

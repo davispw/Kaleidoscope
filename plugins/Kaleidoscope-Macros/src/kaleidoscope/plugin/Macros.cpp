@@ -27,11 +27,11 @@
 #include <Kaleidoscope-Ranges.h>       // for MACRO_FIRST
 #include <stdint.h>                    // for uint8_t
 
-#include "kaleidoscope/KeyEvent.h"                  // for KeyEvent
-#include "kaleidoscope/event_handler_result.h"      // for EventHandlerResult, EventHandlerResul...
-#include "kaleidoscope/key_defs.h"                  // for Key, LSHIFT, Key_NoKey, Key_0, Key_1
-#include "kaleidoscope/keyswitch_state.h"           // for keyToggledOff
-#include "kaleidoscope/plugin/Macros/MacroSteps.h"  // for macro_t, MACRO_NONE, MACRO_ACTION_END
+#include "kaleidoscope/KeyEvent.h"              // for KeyEvent
+#include "kaleidoscope/event_handler_result.h"  // for EventHandlerResult, EventHandlerResul...
+#include "kaleidoscope/key_defs.h"              // for Key, LSHIFT, Key_NoKey, Key_0, Key_1
+#include "kaleidoscope/keyswitch_state.h"       // for keyToggledOff
+#include "kaleidoscope/plugin/MacroSteps.h"     // for macro_t, MACRO_NONE, MACRO_ACTION_END
 
 // =============================================================================
 // Default `macroAction()` function definitions
@@ -48,7 +48,7 @@ namespace plugin {
 
 // Accessor for MacroSupport::play to read Program Memory.
 struct PgmAccessor {
-  const macro_t* current;
+  const macro_t *current;
 
   // There is no boundary check for program macros.
   // The main loop checks for MACRO_STEP_END.
