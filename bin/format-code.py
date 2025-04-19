@@ -254,7 +254,7 @@ def main():
     # If we've been asked to check for changes made by the formatter:
     if opts.check:
         logging.warning('Checking for changes made by the formatter...')
-        changed_files = check_git_diff()
+        changed_files = check_git_diff(verbose=True)
         if len(changed_files) == 0:
             logging.warning("No files changed.  Congratulations!")
         else:
