@@ -213,94 +213,28 @@ EventHandlerResult EphemeralMacros::onKeyEvent(KeyEvent &event) {
   return EventHandlerResult::OK;
 }
 
-// TODO(davispw): refactor DynamicMacros.play() and Macros.play().
-// The only difference is the method of memory access.
-// Until then, some there are some MACRO_ACTION_* steps implemented here
-// that aren't possible to record.
-void EphemeralMacros::play() {
+// Accessor for MacroSupport::play() to read SRAM buffer.
+struct SramAccessor {
+  const uint8_t* current;
+  const uint8_t* end;
+  static constexpr bool has_boundary = true;
 
-  macro_t macro     = MACRO_ACTION_END;
-  uint16_t interval = interval_millis_;
-  uint16_t pos;
-  Key key;
+  SramAccessor(const uint8_t* buf_start, size_t buf_size)
+    : current(buf_start), end(buf_start + buf_size) {}
 
-
-  // Define a lambda function for common key operations to reduce redundancy
-  auto setKeyAndAction = [this, &key, &macro, &pos]() {
-  // Keycode variants of actions don't have flags to set, but we want to make sure
-  // we're still initializing them properly.
-
-  key.setFlags((macro == MACRO_ACTION_STEP_KEYCODEDOWN || macro == MACRO_ACTION_STEP_KEYCODEUP || macro == MACRO_ACTION_STEP_TAPCODE) ? 0
-                                                                                                                                      : buffer_[pos++]);
-
-  key.setKeyCode(buffer_[pos++]);
-
-  switch (macro) {
-    case MACRO_ACTION_STEP_KEYCODEDOWN:
-    case MACRO_ACTION_STEP_KEYDOWN:
-      ::MacroSupport.press(key);
-      break;
-    case MACRO_ACTION_STEP_KEYCODEUP:
-    case MACRO_ACTION_STEP_KEYUP:
-      ::MacroSupport.release(key);
-      break;
-    case MACRO_ACTION_STEP_TAP:
-    case MACRO_ACTION_STEP_TAPCODE:
-      ::MacroSupport.tap(key);
-      break;
-    default:
-      break;
-    }
-  };
-
-
-  pos = 0;
-
-  while (pos < pos_) {
-    switch (macro = buffer_[pos++]) {
-    case MACRO_ACTION_STEP_EXPLICIT_REPORT:
-    case MACRO_ACTION_STEP_IMPLICIT_REPORT:
-    case MACRO_ACTION_STEP_SEND_REPORT:
-      break;
-
-    case MACRO_ACTION_STEP_INTERVAL:
-      interval = buffer_[pos++];
-      break;
-    case MACRO_ACTION_STEP_WAIT: {
-      uint8_t wait = buffer_[pos++];
-      delay(wait);
-      break;
-    }
-
-    case MACRO_ACTION_STEP_KEYDOWN:
-    case MACRO_ACTION_STEP_KEYUP:
-    case MACRO_ACTION_STEP_TAP:
-    case MACRO_ACTION_STEP_KEYCODEUP:
-    case MACRO_ACTION_STEP_TAPCODE:
-    case MACRO_ACTION_STEP_KEYCODEDOWN:
-      setKeyAndAction();
-      break;
-
-    case MACRO_ACTION_STEP_TAP_SEQUENCE:
-    case MACRO_ACTION_STEP_TAP_CODE_SEQUENCE: {
-      bool isKeycodeSequence = macro == MACRO_ACTION_STEP_TAP_CODE_SEQUENCE;
-      while (true) {
-        key.setFlags(isKeycodeSequence ? 0 : buffer_[pos++]);
-        key.setKeyCode(buffer_[pos++]);
-        if (key == Key_NoKey || pos >= pos_)
-          break;
-        ::MacroSupport.tap(key);
-        delay(interval);
-      }
-      break;
-    }
-    default:
-    case MACRO_ACTION_END:
-      return;
-    }
-
-    delay(interval);
+  // Read the next byte and advance
+  inline uint8_t readByte() {
+    return *current++;
   }
+
+  inline bool isEnd() const {
+    return current >= end;
+  }
+};
+
+void EphemeralMacros::play() {
+  SramAccessor accessor(buffer_, max_length_);
+  ::MacroSupport.play(accessor, interval_millis_);
 }
 
 EventHandlerResult EphemeralMacros::onNameQuery() {
