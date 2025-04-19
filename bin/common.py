@@ -88,8 +88,11 @@ def setup_logging(loglevel):
 
 
 # ==============================================================================
-def check_git_diff():
+def check_git_diff(verbose=False):
     """Check for unstaged changes with `git diff`
+
+    Parameters:
+        `verbose` (`bool`): Whether to print `git diff` output if there are changes
 
     Returns: a list of the names of files with unstaged changes
 
@@ -102,6 +105,12 @@ def check_git_diff():
     proc = subprocess.run(git_diff_cmd, capture_output=True)
     if proc.returncode != 0:
         changed_files = split_on_nulls(proc.stdout.decode('utf-8'))
+
+    # For verbose output, run diff again, this time printing the contents.
+    if verbose and len(changed_files) > 0:
+        git_diff_cmd.remove('--name-only')
+        subprocess.run(git_diff_cmd)
+
     return changed_files
 
 
