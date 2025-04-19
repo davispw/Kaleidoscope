@@ -37,6 +37,14 @@
 #define MAX_CONCURRENT_MACRO_KEYS 8
 #endif
 
+// Delay (milliseconds) between key press and release for tap().
+// Because some HID implementations coalesce reports sent within a short
+// period of time, we need to insert a small delay between programmatic press and
+// release events.
+// In particular, Windows BLE HID can turn a press and release inside the same
+// transmission interval into a no-op, causing dropped keystrokes.
+#define MACRO_TAP_DELAY 25
+
 namespace kaleidoscope {
 namespace plugin {
 

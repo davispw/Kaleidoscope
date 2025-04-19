@@ -40,6 +40,8 @@ namespace plugin {
 
 class EphemeralMacros : public kaleidoscope::Plugin {
  public:
+  EphemeralMacros();
+
   void initializeBuffer(void *buffer, size_t size);
   void play();
 
@@ -59,12 +61,12 @@ class EphemeralMacros : public kaleidoscope::Plugin {
   void failRecording();
   bool flushLiveKeys();
 
-  macro_t *buffer_          = nullptr;
-  size_t max_length_        = 0;
-  bool recording_           = false;
-  size_t pos_               = 0;
-  Key previous_keydown_     = Key_NoKey;
-  uint16_t interval_millis_ = 25;
+  macro_t *buffer_;
+  size_t max_length_;
+  bool recording_;
+  size_t pos_;
+  Key previous_keydown_;
+  uint16_t interval_millis_;
 };
 
 }  // namespace plugin
