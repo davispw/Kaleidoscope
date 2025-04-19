@@ -46,96 +46,34 @@ macroAction(uint8_t macro_id, KeyEvent &event) {
 namespace kaleidoscope {
 namespace plugin {
 
+// Accessor for MacroSupport::play to read Program Memory.
+struct PgmAccessor {
+  const macro_t* current;
+
+  // There is no boundary check for program macros.
+  // The main loop checks for MACRO_STEP_END.
+  // The sequence loop checks for Key_NoKey.
+  static constexpr bool has_boundary = false;
+
+  explicit PgmAccessor(const macro_t *macro_ptr)
+    : current(macro_ptr) {}
+
+  // Read the next byte from PROGMEM and advance.
+  inline uint8_t readByte() {
+    // No internal boundary check here -- relies on loop structure.
+    return pgm_read_byte(current++);
+  }
+};
+
 // -----------------------------------------------------------------------------
 // Public helper functions
 
-void Macros::play(const macro_t *macro_p) {
-  macro_t macro    = MACRO_ACTION_END;
-  uint8_t interval = 0;
-  Key key;
-
-  if (macro_p == MACRO_NONE)
+void Macros::play(const macro_t *macro_ptr) {
+  if (macro_ptr == MACRO_NONE)
     return;
 
-
-  // Define a lambda function for common key operations to reduce redundancy
-  auto setKeyAndAction = [this, &key, &macro, &macro_p]() {
-    // Keycode variants of actions don't have flags to set, but we want to make sure
-    // we're still initializing them properly.
-
-    key.setFlags((macro == MACRO_ACTION_STEP_KEYCODEDOWN || macro == MACRO_ACTION_STEP_KEYCODEUP || macro == MACRO_ACTION_STEP_TAPCODE) ? 0
-                                                                                                                                        : pgm_read_byte(macro_p++));
-    key.setKeyCode(pgm_read_byte(macro_p++));
-
-    switch (macro) {
-    case MACRO_ACTION_STEP_KEYCODEDOWN:
-    case MACRO_ACTION_STEP_KEYDOWN:
-      this->press(key);
-      break;
-    case MACRO_ACTION_STEP_KEYCODEUP:
-    case MACRO_ACTION_STEP_KEYUP:
-      this->release(key);
-      break;
-    case MACRO_ACTION_STEP_TAP:
-    case MACRO_ACTION_STEP_TAPCODE:
-      this->tap(key);
-      break;
-    default:
-      break;
-    }
-  };
-
-
-  while (true) {
-    switch (macro = pgm_read_byte(macro_p++)) {
-    // These are unlikely to be useful now that we have KeyEvent. I think the
-    // whole `explicit_report` came about as a result of scan-order bugs.
-    case MACRO_ACTION_STEP_EXPLICIT_REPORT:
-    case MACRO_ACTION_STEP_IMPLICIT_REPORT:
-    case MACRO_ACTION_STEP_SEND_REPORT:
-      break;
-    // End legacy macro step commands
-
-    // Timing
-    case MACRO_ACTION_STEP_INTERVAL:
-      interval = pgm_read_byte(macro_p++);
-      break;
-    case MACRO_ACTION_STEP_WAIT: {
-      uint8_t wait = pgm_read_byte(macro_p++);
-      delay(wait);
-      break;
-    }
-
-    case MACRO_ACTION_STEP_KEYDOWN:
-    case MACRO_ACTION_STEP_KEYUP:
-    case MACRO_ACTION_STEP_TAP:
-    case MACRO_ACTION_STEP_KEYCODEDOWN:
-    case MACRO_ACTION_STEP_KEYCODEUP:
-    case MACRO_ACTION_STEP_TAPCODE:
-      setKeyAndAction();
-      break;
-
-    case MACRO_ACTION_STEP_TAP_SEQUENCE:
-    case MACRO_ACTION_STEP_TAP_CODE_SEQUENCE: {
-      bool isKeycodeSequence = macro == MACRO_ACTION_STEP_TAP_CODE_SEQUENCE;
-      while (true) {
-        key.setFlags(isKeycodeSequence ? 0 : pgm_read_byte(macro_p++));
-        key.setKeyCode(pgm_read_byte(macro_p++));
-        if (key == Key_NoKey)
-          break;
-        tap(key);
-        delay(interval);
-      }
-      break;
-    }
-
-    case MACRO_ACTION_END:
-    default:
-      return;
-    }
-
-    delay(interval);
-  }
+  PgmAccessor accessor(macro_ptr);
+  ::MacroSupport.play(accessor);
 }
 
 const macro_t *Macros::type(const char *string) const {

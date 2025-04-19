@@ -101,95 +101,37 @@ uint8_t DynamicMacros::updateDynamicMacroCache() {
   return current_id;
 }
 
+// Accessor for MacroSupport::play() to read EEPROM storage.
+struct EepromAccessor {
+  uint16_t pos;
+  uint16_t end_pos;
+
+  static constexpr bool has_boundary = true;
+
+  EepromAccessor(uint16_t start_addr, uint16_t storage_size)
+    : pos(start_addr), end_pos(start_addr + storage_size) {}
+
+  // Read the next byte and advance.
+  inline uint8_t readByte() {
+    return Runtime.storage().read(pos++);
+  }
+
+  // Check if we've reached the end of alloted storage.
+  inline bool isEnd() const {
+    return pos >= end_pos;
+  }
+};
+
+
 // public
 void DynamicMacros::play(uint8_t macro_id) {
-  macro_t macro    = MACRO_ACTION_END;
-  uint8_t interval = 0;
-  uint16_t pos;
-  Key key;
-
   // If the requested ID is higher than the number of macros we found during the
   // cache update, bail out. Our map beyond `macro_count_` is unreliable.
   if (macro_id >= macro_count_)
     return;
 
-  auto &storage = Runtime.storage();
-  // Define a lambda function for common key operations to reduce redundancy
-  auto setKeyAndAction = [this, &key, &macro, &pos]() {
-    // Keycode variants of actions don't have flags to set, but we want to make sure
-    // we're still initializing them properly.
-
-    key.setFlags((macro == MACRO_ACTION_STEP_KEYCODEDOWN || macro == MACRO_ACTION_STEP_KEYCODEUP || macro == MACRO_ACTION_STEP_TAPCODE) ? 0
-                                                                                                                                        : Runtime.storage().read(pos++));
-
-    key.setKeyCode(Runtime.storage().read(pos++));
-
-    switch (macro) {
-    case MACRO_ACTION_STEP_KEYCODEDOWN:
-    case MACRO_ACTION_STEP_KEYDOWN:
-      this->press(key);
-      break;
-    case MACRO_ACTION_STEP_KEYCODEUP:
-    case MACRO_ACTION_STEP_KEYUP:
-      this->release(key);
-      break;
-    case MACRO_ACTION_STEP_TAP:
-    case MACRO_ACTION_STEP_TAPCODE:
-      this->tap(key);
-      break;
-    default:
-      break;
-    }
-  };
-
-
-  pos = storage_base_ + map_[macro_id];
-
-  while (pos < storage_base_ + storage_size_) {
-    switch (macro = Runtime.storage().read(pos++)) {
-    case MACRO_ACTION_STEP_EXPLICIT_REPORT:
-    case MACRO_ACTION_STEP_IMPLICIT_REPORT:
-    case MACRO_ACTION_STEP_SEND_REPORT:
-      break;
-
-    case MACRO_ACTION_STEP_INTERVAL:
-      interval = Runtime.storage().read(pos++);
-      break;
-    case MACRO_ACTION_STEP_WAIT: {
-      uint8_t wait = Runtime.storage().read(pos++);
-      delay(wait);
-      break;
-    }
-
-    case MACRO_ACTION_STEP_KEYDOWN:
-    case MACRO_ACTION_STEP_KEYUP:
-    case MACRO_ACTION_STEP_TAP:
-    case MACRO_ACTION_STEP_KEYCODEUP:
-    case MACRO_ACTION_STEP_TAPCODE:
-    case MACRO_ACTION_STEP_KEYCODEDOWN:
-      setKeyAndAction();
-      break;
-
-    case MACRO_ACTION_STEP_TAP_SEQUENCE:
-    case MACRO_ACTION_STEP_TAP_CODE_SEQUENCE: {
-      bool isKeycodeSequence = macro == MACRO_ACTION_STEP_TAP_CODE_SEQUENCE;
-      while (true) {
-        key.setFlags(isKeycodeSequence ? 0 : storage.read(pos++));
-        key.setKeyCode(storage.read(pos++));
-        if (key == Key_NoKey || pos >= storage_base_ + storage_size_)
-          break;
-        tap(key);
-        delay(interval);
-      }
-      break;
-    }
-    case MACRO_ACTION_END:
-    default:
-      return;
-    }
-
-    delay(interval);
-  }
+  EepromAccessor accessor(storage_base_ + map_[macro_id], storage_size_);
+  ::MacroSupport.play(accessor);
 }
 
 bool isDynamicMacrosKey(Key key) {
