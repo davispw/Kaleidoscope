@@ -36,6 +36,9 @@ namespace plugin {
 
 // =============================================================================
 
+EphemeralMacros::EphemeralMacros()
+  : interval_millis_(MACRO_TAP_DELAY) {}
+
 void EphemeralMacros::initializeBuffer(void *buffer, size_t size) {
   buffer_     = reinterpret_cast<macro_t *>(buffer);
   max_length_ = size;
