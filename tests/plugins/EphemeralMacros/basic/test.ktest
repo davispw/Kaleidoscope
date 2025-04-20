@@ -5,15 +5,18 @@ KEYSWITCH PLAY    0 1
 KEYSWITCH X       1 0
 KEYSWITCH Y       1 1
 KEYSWITCH SHIFT   2 0
+KEYSWITCH SHIFT_X 3 0
 
 # ==============================================================================
 NAME Record and playback of simple taps
 
+# --- Start Recording ---
 RUN 5 ms
 PRESS RECORD
 RUN 5 ms
 RELEASE RECORD
 
+# --- Sequence: Tap(X), Tap(Y) ---
 RUN 5 ms
 PRESS X
 RUN 1 cycle
@@ -31,17 +34,522 @@ RELEASE Y
 RUN 1 cycle
 EXPECT keyboard-report empty
 
+# --- End Recording ---
 RUN 5 ms
 PRESS RECORD
 RUN 5 ms
 RELEASE RECORD
 
+# --- Playback ---
+RUN 5 ms
+PRESS PLAY
+RUN 1 cycle
+
+# --- Expect Taps: X, Y ---
+EXPECT keyboard-report Key_X
+EXPECT keyboard-report empty
+EXPECT keyboard-report Key_Y
+EXPECT keyboard-report empty
+
+RUN 5 ms
+RELEASE PLAY
+RUN 1 cycle
+
+# ==============================================================================
+NAME Record Shift modifier
+
+# --- Start Recording ---
+RUN 5 ms
+PRESS RECORD
+RUN 5 ms
+RELEASE RECORD
+
+# --- Sequence: Shift+X, X, Shift+Y, Y ---
+RUN 5 ms
+PRESS SHIFT
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift
+RUN 5 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift Key_X
+RUN 5 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift
+RUN 5 ms
+RELEASE SHIFT
+RUN 1 cycle
+EXPECT keyboard-report empty
+
+RUN 5 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+RUN 5 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report empty
+
+RUN 5 ms
+PRESS SHIFT
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift
+RUN 5 ms
+PRESS Y
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift Key_Y
+RUN 5 ms
+RELEASE Y
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift
+RUN 5 ms
+RELEASE SHIFT
+RUN 1 cycle
+EXPECT keyboard-report empty
+
+RUN 5 ms
+PRESS Y
+RUN 1 cycle
+EXPECT keyboard-report Key_Y
+RUN 5 ms
+RELEASE Y
+RUN 1 cycle
+EXPECT keyboard-report empty
+
+# --- Stop Recording ---
+RUN 5 ms
+PRESS RECORD
+RUN 5 ms
+RELEASE RECORD
+
+# --- Playback ---
+RUN 5 ms
+PRESS PLAY
+RUN 1 cycle
+# KeyDown(Shift)
+EXPECT keyboard-report Key_LeftShift
+# TapCode(X) - Press X
+EXPECT keyboard-report Key_LeftShift Key_X
+# TapCode(X) - Release X
+EXPECT keyboard-report Key_LeftShift
+# KeyUp(Shift)
+EXPECT keyboard-report empty
+# TapCode(X) - Press X
+EXPECT keyboard-report Key_X
+# TapCode(X) - Release X
+EXPECT keyboard-report empty
+# KeyDown(Shift)
+EXPECT keyboard-report Key_LeftShift
+# TapCode(Y) - Press Y
+EXPECT keyboard-report Key_LeftShift Key_Y
+# TapCode(Y) - Release Y
+EXPECT keyboard-report Key_LeftShift
+# KeyUp(Shift)
+EXPECT keyboard-report empty
+# TapCode(Y) - Press Y
+EXPECT keyboard-report Key_Y
+# TapCode(Y) - Release Y
+EXPECT keyboard-report empty
+
+RUN 5 ms
+RELEASE PLAY
+RUN 1 cycle
+
+# ==============================================================================
+NAME Record Buffered Keydown Flush
+
+# --- Start Recording ---
+RUN 5 ms
+PRESS RECORD
+RUN 5 ms
+RELEASE RECORD
+
+# --- Sequence: Hold X, Tap Y, Release X ---
+RUN 5 ms
+PRESS X # Start holding X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+
+# (At this point, the recording has buffered KEYPRESS(X),
+# waiting to see if it's a tap. Press Y instead.)
+
+RUN 5 ms
+PRESS Y # Tap Y
+RUN 1 cycle
+EXPECT keyboard-report Key_X Key_Y
+RUN 5 ms
+RELEASE Y
+RUN 1 cycle
+EXPECT keyboard-report Key_X # Y released, X still held
+
+RUN 5 ms
+RELEASE X # Release X
+RUN 1 cycle
+EXPECT keyboard-report empty
+
+# --- Stop Recording ---
+RUN 5 ms
+PRESS RECORD
+RUN 5 ms
+RELEASE RECORD
+
+# --- Playback Verification ---
+# Expected Macro: KEYDOWN(X), TAPCODE(Y), KEYUP(X)
+RUN 5 ms
+PRESS PLAY
+RUN 1 cycle
+# Playback: press(X)
+EXPECT keyboard-report Key_X
+# Playback: tap(Y) press
+EXPECT keyboard-report Key_X Key_Y
+# Playback: tap(Y) release
+EXPECT keyboard-report Key_X
+# Playback: release(X)
+EXPECT keyboard-report empty
+
+RUN 5 ms
+RELEASE PLAY
+RUN 1 cycle
+
+# ==============================================================================
+NAME Ending Recording with Held Keys
+# --- Start Recording ---
+RUN 5 ms
+PRESS RECORD
+RUN 5 ms
+RELEASE RECORD
+
+# --- Sequence: Hold X, Hold Shift ---
+RUN 5 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+
+RUN 5 ms
+PRESS SHIFT
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift Key_X
+
+# --- Stop Recording (while keys are still held) ---
+# This calls flushLiveKeys() and records their release.
+RUN 5 ms
+PRESS RECORD
+RUN 5 ms
+RELEASE RECORD
+
+# --- For this test, release physically held keys BEFORE playback ---
+RUN 5 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift
+RUN 5 ms
+RELEASE SHIFT # Release physical Shift
+RUN 1 cycle
+EXPECT keyboard-report empty
+
+# --- Playback Verification ---
 RUN 5 ms
 PRESS PLAY
 RUN 1 cycle
 EXPECT keyboard-report Key_X
+EXPECT keyboard-report Key_LeftShift Key_X
+# Expect that the recording releases the held keys.
+EXPECT keyboard-report Key_LeftShift
 EXPECT keyboard-report empty
-EXPECT keyboard-report Key_Y
+
+RUN 5 ms
+RELEASE PLAY
+RUN 1 cycle
+
+# ==============================================================================
+NAME Ending Recording and Playback with Held Keys
+# --- Start Recording ---
+RUN 5 ms
+PRESS RECORD
+RUN 5 ms
+RELEASE RECORD
+
+# --- Sequence: Hold X, Hold Shift ---
+RUN 5 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+
+RUN 5 ms
+PRESS SHIFT
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift Key_X
+
+# --- Stop Recording (while keys are still held) ---
+# This calls flushLiveKeys() and records their release.
+RUN 5 ms
+PRESS RECORD
+RUN 5 ms
+RELEASE RECORD
+
+# --- Playback Verification ---
+# --- For this test, continue to hold the keys DURING playback ---
+# Expected Macro: KEYDOWN(X), KEYDOWN(Shift), KEYUP(X), KEYUP(Shift)
+RUN 5 ms
+PRESS PLAY
+RUN 1 cycle
+# Playback occurs while X & Shift physically held.
+# Observed reports reflect complex interaction/coalescing.
+EXPECT keyboard-report Key_LeftShift
+EXPECT keyboard-report Key_LeftShift Key_X
+
+RUN 5 ms
+RELEASE PLAY
+RUN 1 cycle
+
+# --- Release the physically held keys ---
+RUN 5 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift
+RUN 5 ms
+RELEASE SHIFT
+RUN 1 cycle
+EXPECT keyboard-report empty
+
+
+# ==============================================================================
+NAME Recording Buffer Overflow
+
+# --- Start Recording ---
+RUN 5 ms
+PRESS RECORD
+RUN 5 ms
+RELEASE RECORD
+
+# --- Record Sequence (Tap X 16 times) ---
+# Buffer is 32 bytes. TAPCODE(X) is 2 bytes. END is 1 byte.
+# 15 TAPCODEs = 30 bytes. Fits with END (31 bytes total).
+# The 16th TAPCODE requires bytes 32 & 33 -> Overflow.
+# failRecording() should set buffer[0] = MACRO_ACTION_END.
+
+# Tap 1
+RUN 1 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+RUN 1 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report empty
+# Tap 2
+RUN 1 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+RUN 1 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report empty
+# Tap 3
+RUN 1 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+RUN 1 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report empty
+# Tap 4
+RUN 1 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+RUN 1 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report empty
+# Tap 5
+RUN 1 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+RUN 1 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report empty
+# Tap 6
+RUN 1 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+RUN 1 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report empty
+# Tap 7
+RUN 1 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+RUN 1 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report empty
+# Tap 8
+RUN 1 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+RUN 1 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report empty
+# Tap 9
+RUN 1 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+RUN 1 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report empty
+# Tap 10
+RUN 1 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+RUN 1 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report empty
+# Tap 11
+RUN 1 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+RUN 1 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report empty
+# Tap 12
+RUN 1 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+RUN 1 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report empty
+# Tap 13
+RUN 1 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+RUN 1 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report empty
+# Tap 14
+RUN 1 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+RUN 1 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report empty
+# Tap 15 - Fills buffer to 30 bytes (plus END = 31)
+RUN 1 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+RUN 1 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report empty
+# Tap 16 - This press/release causes overflow when saving TAPCODE
+RUN 1 ms
+PRESS X
+RUN 1 cycle
+EXPECT keyboard-report Key_X
+RUN 1 ms
+RELEASE X
+RUN 1 cycle
+EXPECT keyboard-report empty
+
+# --- Stop Recording ---
+# Recording should have failed already, but tap RECORD anyway.
+RUN 5 ms
+PRESS RECORD
+RUN 5 ms
+RELEASE RECORD
+
+# --- Playback Verification ---
+# Expected Macro: Should be empty due to failRecording().
+RUN 5 ms
+PRESS PLAY
+RUN 1 cycle
+# Expect no reports during playback
+RUN 5 ms
+RELEASE PLAY
+RUN 1 cycle
+
+# ==============================================================================
+NAME Record Key with Flag
+
+# --- Start Recording ---
+RUN 5 ms
+PRESS RECORD
+RUN 5 ms
+RELEASE RECORD
+
+# --- Sequence: Tap LSHIFT(X), Hold Shift, Tap LSHIFT(X), Release Shift ---
+RUN 5 ms
+PRESS SHIFT_X
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift
+EXPECT keyboard-report Key_LeftShift Key_X
+RUN 5 ms
+RELEASE SHIFT_X
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift
+EXPECT keyboard-report empty
+
+RUN 5 ms
+PRESS SHIFT
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift
+RUN 5 ms
+PRESS SHIFT_X
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift Key_X
+RUN 5 ms
+RELEASE SHIFT_X
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift
+RUN 5 ms
+RELEASE SHIFT
+RUN 1 cycle
+EXPECT keyboard-report empty
+
+# --- Stop Recording ---
+RUN 5 ms
+PRESS RECORD
+RUN 5 ms
+RELEASE RECORD
+
+# --- Playback ---
+RUN 5 ms
+PRESS PLAY
+RUN 1 cycle
+# Tap(LSHIFT(X)) - key with flag bits
+EXPECT keyboard-report Key_LeftShift
+EXPECT keyboard-report Key_LeftShift Key_X
+EXPECT keyboard-report Key_LeftShift
+EXPECT keyboard-report empty
+# Press(LSHIFT)
+EXPECT keyboard-report Key_LeftShift
+# Tap(LSHIFT(X)) - shift remains held after tap
+EXPECT keyboard-report Key_LeftShift Key_X
+EXPECT keyboard-report Key_LeftShift
+# Release(LSHIFT)
 EXPECT keyboard-report empty
 
 RUN 5 ms

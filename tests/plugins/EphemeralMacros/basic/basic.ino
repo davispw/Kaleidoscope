@@ -24,7 +24,7 @@ KEYMAPS(
       Key_RecordMacro, Key_PlayRecordedMacro, ___, ___, ___, ___, ___,
       Key_X, Key_Y, ___, ___, ___, ___, ___,
       Key_LeftShift, ___, ___, ___, ___, ___,
-      ___, ___, ___, ___, ___, ___, ___,
+      LSHIFT(Key_X), ___, ___, ___, ___, ___, ___,
       ___, ___, ___, ___,
       ___,
 
