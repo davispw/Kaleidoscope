@@ -22,8 +22,9 @@
 
 #pragma once
 
-#include <Kaleidoscope-Ranges.h>  // for RECORD_MACRO
-#include <stdint.h>               // for uint16_t, uint8_t, size_t
+#include <Kaleidoscope-MacroSupport.h>  // for MacroSupport
+#include <Kaleidoscope-Ranges.h>        // for RECORD_MACRO
+#include <stdint.h>                     // for uint16_t, uint8_t, size_t
 
 #include "kaleidoscope/KeyAddrBitfield.h"       // for KeyAddrBitfield
 #include "kaleidoscope/KeyEvent.h"              // for KeyEvent
@@ -51,6 +52,9 @@ class EphemeralMacros : public kaleidoscope::Plugin {
 
   EventHandlerResult onNameQuery();
   EventHandlerResult onKeyEvent(KeyEvent &event);
+  EventHandlerResult beforeReportingState(const KeyEvent &event) {
+    return ::MacroSupport.beforeReportingState(event);
+  }
 
  private:
   bool recordKey(const KeyEvent &event);
