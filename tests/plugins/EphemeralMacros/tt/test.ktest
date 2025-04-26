@@ -1,0 +1,66 @@
+VERSION 1
+
+KEYSWITCH RECORD  0 0
+KEYSWITCH PLAY    0 1
+KEYSWITCH X       1 0
+KEYSWITCH TT_X    1 1
+KEYSWITCH LSHIFT  2 0
+
+# ==============================================================================
+NAME Record TopsyTurvy key
+
+# --- Start Recording ---
+RUN 5 ms
+PRESS RECORD
+RUN 5 ms
+RELEASE RECORD
+
+# --- Sequence: TT(X), Shift+TT(X) ---
+RUN 5 ms
+PRESS TT_X
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift
+EXPECT keyboard-report Key_LeftShift Key_X
+RUN 5 ms
+RELEASE TT_X
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift
+EXPECT keyboard-report empty
+
+RUN 5 ms
+PRESS LSHIFT
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift
+RUN 5 ms
+PRESS TT_X
+RUN 1 cycle
+EXPECT keyboard-report Key_X  # Shift is temporarily released
+RUN 5 ms
+RELEASE TT_X
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift  # Shift is pressed again
+RELEASE LSHIFT
+RUN 1 cycle
+EXPECT keyboard-report empty
+
+# --- Stop Recording ---
+RUN 5 ms
+PRESS RECORD
+RUN 5 ms
+RELEASE RECORD
+
+# --- Playback ---
+RUN 5 ms
+PRESS PLAY
+RUN 1 cycle
+EXPECT keyboard-report Key_LeftShift
+EXPECT keyboard-report Key_LeftShift Key_X
+EXPECT keyboard-report empty
+EXPECT keyboard-report Key_LeftShift
+EXPECT keyboard-report Key_X
+EXPECT keyboard-report Key_LeftShift
+EXPECT keyboard-report empty
+
+RUN 5 ms
+RELEASE PLAY
+RUN 1 cycle

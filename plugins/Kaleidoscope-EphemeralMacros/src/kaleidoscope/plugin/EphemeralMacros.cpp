@@ -27,6 +27,7 @@
 #include <Kaleidoscope-Ranges.h>        // for RECORD_MACRO, PLAY_RECORDED_MACRO
 #include <stdint.h>                     // for uint8_t, uint16_t, size_t
 
+#include "kaleidoscope/KeyAddr.h"            // for KeyAddr
 #include "kaleidoscope/KeyEvent.h"           // for KeyEvent
 #include "kaleidoscope/keyswitch_state.h"    // for keyToggledOn
 #include "kaleidoscope/plugin/MacroSteps.h"  // for macro_t, MACRO_ACTION_END, MACRO_ACTION_STEP_...
@@ -54,12 +55,13 @@ bool EphemeralMacros::recordKey(const KeyEvent &event) {
   bool is_key_up   = keyToggledOff(event.state);
   if (!is_key_down && !is_key_up || event.key == Key_NoKey)
     return true;
-  return recordKey(event.key, is_key_down);
+  return recordKey(event.key, event.addr, is_key_down);
 }
 
-bool EphemeralMacros::recordKey(Key key, bool is_key_down) {
-  if (!is_key_down && previous_keydown_ == key) {
+bool EphemeralMacros::recordKey(Key key, KeyAddr addr, bool is_key_down) {
+  if (!is_key_down && prev_keydown_addr_ == addr) {
     // Record a tap if a key is up immediately after down.
+    // Downstream plugins can mutate the event's key, but the addr is distinct.
     // This saves a little memory and reduces interval delay for simple taps.
     if (key.getFlags() == 0) {
       if (!saveStep(MACRO_ACTION_STEP_TAPCODE, key.getKeyCode())) {
@@ -70,14 +72,16 @@ bool EphemeralMacros::recordKey(Key key, bool is_key_down) {
         return false;
       }
     }
-    previous_keydown_ = Key_NoKey;
+    prev_keydown_addr_ = KeyAddr::none();
+    prev_keydown_key_  = Key_NoKey;
     return true;
   }
 
   // Flush any previously-buffered keydown event, which is not a tap.
-  if (previous_keydown_ != Key_NoKey) {
-    Key buffered      = previous_keydown_;
-    previous_keydown_ = Key_NoKey;
+  if (prev_keydown_addr_ != KeyAddr::none()) {
+    Key buffered       = prev_keydown_key_;
+    prev_keydown_addr_ = KeyAddr::none();
+    prev_keydown_key_  = Key_NoKey;
     if (buffered.getFlags() == 0) {
       if (!saveStep(MACRO_ACTION_STEP_KEYCODEDOWN, buffered.getKeyCode())) {
         return false;
@@ -93,7 +97,8 @@ bool EphemeralMacros::recordKey(Key key, bool is_key_down) {
   // Buffer keydown events.
   // They'll be either flushed or converted to a tap on the next event.
   if (is_key_down) {
-    previous_keydown_ = key;
+    prev_keydown_addr_ = addr;
+    prev_keydown_key_  = key;
     return true;
   }
 
@@ -156,7 +161,7 @@ bool EphemeralMacros::flushLiveKeys() {
   // This prevents stuck keys at the end of a macro.
   for (Key key : live_keys.all()) {
     if (key != Key_Inactive && key != Key_Masked) {
-      if (!recordKey(key, /* is_key_down= */ false)) {
+      if (!recordKey(key, KeyAddr::none(), /* is_key_down= */ false)) {
         return false;
       }
     }
@@ -172,9 +177,10 @@ EventHandlerResult EphemeralMacros::onKeyEvent(KeyEvent &event) {
     if (keyToggledOn(event.state)) {
       if (!recording_) {
         // Start recording.
-        recording_        = true;
-        previous_keydown_ = Key_NoKey;
-        pos_              = 0;
+        recording_         = true;
+        prev_keydown_key_  = Key_NoKey;
+        prev_keydown_addr_ = KeyAddr::none();
+        pos_               = 0;
       } else {
         // End recording.
         recording_ = false;

@@ -27,6 +27,7 @@
 #include <stdint.h>                     // for uint16_t, uint8_t, size_t
 
 #include "kaleidoscope/KeyAddrBitfield.h"       // for KeyAddrBitfield
+#include "kaleidoscope/KeyAddr.h"               // for KeyAddr
 #include "kaleidoscope/KeyEvent.h"              // for KeyEvent
 #include "kaleidoscope/event_handler_result.h"  // for EventHandlerResult
 #include "kaleidoscope/key_defs.h"              // for Key
@@ -58,7 +59,7 @@ class EphemeralMacros : public kaleidoscope::Plugin {
 
  private:
   bool recordKey(const KeyEvent &event);
-  bool recordKey(Key key, bool is_key_down);
+  bool recordKey(Key key, KeyAddr addr, bool is_key_down);
   bool saveStep(macro_t step, uint8_t arg1);
   bool saveStep(macro_t step, uint8_t arg1, uint8_t arg2);
   bool saveStep(macro_t step, const uint8_t *args, size_t args_size);
@@ -69,7 +70,8 @@ class EphemeralMacros : public kaleidoscope::Plugin {
   size_t max_length_;
   bool recording_;
   size_t pos_;
-  Key previous_keydown_;
+  Key prev_keydown_key_;
+  KeyAddr prev_keydown_addr_;
   uint16_t interval_millis_;
 };
 
