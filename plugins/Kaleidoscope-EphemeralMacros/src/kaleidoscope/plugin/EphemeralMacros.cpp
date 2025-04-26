@@ -32,7 +32,7 @@
 #include "kaleidoscope/keyswitch_state.h"    // for keyToggledOn
 #include "kaleidoscope/plugin/MacroSteps.h"  // for macro_t, MACRO_ACTION_END, MACRO_ACTION_STEP_...
 
-#include "kaleidoscope/device/virtual/Logging.h"  // for log_info, logging
+#include <Kaleidoscope-Devel-ArduinoTrace.h> // for DUMP, TRACE
 
 namespace kaleidoscope {
 namespace plugin {
@@ -61,6 +61,12 @@ bool EphemeralMacros::recordKey(const KeyEvent &event) {
 }
 
 bool EphemeralMacros::recordKey(Key key, KeyAddr addr, bool is_key_down) {
+  TRACE();
+  DUMP(key);
+  DUMP(addr);
+  DUMP(is_key_down);
+  DUMP(prev_keydown_addr_);
+  DUMP(prev_keydown_key_);
   if (!is_key_down && prev_keydown_addr_ == addr) {
     // Record a tap if a key is up immediately after down.
     // Downstream plugins can mutate the event's key, but the addr is distinct.
@@ -74,16 +80,16 @@ bool EphemeralMacros::recordKey(Key key, KeyAddr addr, bool is_key_down) {
         return false;
       }
     }
-    prev_keydown_addr_ = KeyAddr::none();
-    prev_keydown_key_  = Key_NoKey;
+    prev_keydown_key_ = Key_NoKey;
+    prev_keydown_addr_.clear();
     return true;
   }
 
   // Flush any previously-buffered keydown event, which is not a tap.
   if (prev_keydown_addr_ != KeyAddr::none()) {
-    Key buffered       = prev_keydown_key_;
-    prev_keydown_addr_ = KeyAddr::none();
-    prev_keydown_key_  = Key_NoKey;
+    Key buffered      = prev_keydown_key_;
+    prev_keydown_key_ = Key_NoKey;
+    prev_keydown_addr_.clear();
     if (buffered.getFlags() == 0) {
       if (!saveStep(MACRO_ACTION_STEP_KEYCODEDOWN, buffered.getKeyCode())) {
         return false;
@@ -119,11 +125,18 @@ bool EphemeralMacros::recordKey(Key key, KeyAddr addr, bool is_key_down) {
 }
 
 bool EphemeralMacros::saveStep(const macro_t step, uint8_t arg1) {
+  TRACE();
+  DUMP(step);
+  DUMP(arg1);
   uint8_t args[]{arg1};
   return saveStep(step, args, 1);
 }
 
 bool EphemeralMacros::saveStep(const macro_t step, uint8_t arg1, uint8_t arg2) {
+  TRACE();
+  DUMP(step);
+  DUMP(arg1);
+  DUMP(arg2);
   uint8_t args[]{arg1, arg2};
   return saveStep(step, args, 2);
 }
@@ -149,6 +162,7 @@ bool EphemeralMacros::saveStep(macro_t step, const uint8_t *args, size_t args_si
 }
 
 void EphemeralMacros::failRecording() {
+  TRACE();
   // 1. Prevent subsequent steps from being recorded, no matter their length.
   // 2. Erase the macro.
   // This prevents stuck keys on playback of an incomplete macro.
@@ -159,10 +173,12 @@ void EphemeralMacros::failRecording() {
 }
 
 bool EphemeralMacros::flushLiveKeys() {
+  TRACE();
   // Record keyUp events for all held keys.
   // This prevents stuck keys at the end of a macro.
   for (Key key : live_keys.all()) {
     if (key != Key_Inactive && key != Key_Masked) {
+      DUMP(key);
       if (!recordKey(key, KeyAddr::none(), /* is_key_down= */ false)) {
         return false;
       }
@@ -179,10 +195,10 @@ EventHandlerResult EphemeralMacros::onKeyEvent(KeyEvent &event) {
     if (keyToggledOn(event.state)) {
       if (!recording_) {
         // Start recording.
-        recording_         = true;
-        prev_keydown_key_  = Key_NoKey;
-        prev_keydown_addr_ = KeyAddr::none();
-        pos_               = 0;
+        recording_        = true;
+        pos_              = 0;
+        prev_keydown_key_ = Key_NoKey;
+        prev_keydown_addr_.clear();
       } else {
         // End recording.
         recording_ = false;
@@ -232,6 +248,7 @@ struct SramAccessor {
 
   // Read the next byte and advance
   inline uint8_t readByte() {
+    DUMP(*current);
     return *current++;
   }
 
@@ -242,12 +259,11 @@ struct SramAccessor {
 
 void EphemeralMacros::play() {
 #ifdef KALEIDOSCOPE_VIRTUAL_BUILD
-  ::kaleidoscope::logging::log_error("EphemeralMacros.play(): sequence=");
+  TRACE();
   int i = 0;
   for (macro_t *ptr = buffer_; i < max_length_ && *ptr != MACRO_ACTION_END; i++, ptr++) {
-    ::kaleidoscope::logging::log_error("%d ", *ptr);
+    DUMP(*ptr);
   }
-  ::kaleidoscope::logging::log_error("\n");
 #endif
 
   SramAccessor accessor(buffer_, max_length_);
